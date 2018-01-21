@@ -1,7 +1,7 @@
 let express = require('express');
 let router = express.Router();
 let jwt = require('jsonwebtoken');
-
+let User = require('../models/user');
 let Message = require('../models/message');
 
 router.get('/', function (req, res, next) {
@@ -33,20 +33,44 @@ router.use('/', (req, res, next) => {
     });
 });
 
-router.post('/', function (req, res, next) {
-    let message = new Message({
-        content: req.body.content
-    });
-    message.save(function (err, result) {
+router.post('/', (req, res, next) => {
+    let decoded = jwt.decode(req.query.token);
+    User.findById(decoded.user._id, (err, user) => {
         if (err) {
             return res.status(500).json({
                 title: 'An error occurred',
                 error: err
             });
         }
-        res.status(201).json({
-            message: 'Saved message',
-            obj: result
+        let message = new Message({
+            content: req.body.content,
+            user: user._id
+        });
+
+        message.save((err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    title: 'An error occurred',
+                    error: err
+                });
+            }
+            user.messages.push(result._id);
+            user.save(function(err, result) {
+
+                if (err) {
+                    console.log(err);
+                    res.send(err);
+                }
+         
+            });
+
+            res.status(201).json({
+                message: 'Saved message',
+                obj: result
+            });
+
+
+
         });
     });
 });
@@ -63,7 +87,7 @@ router.patch('/:id', function (req, res, next) {
             return res.status(500).json({
                 title: 'No Message Found!',
                 error: {
-                    message: 'Message not found'
+                    message: ' Message not found'
                 }
             });
         }
