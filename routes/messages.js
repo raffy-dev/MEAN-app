@@ -6,12 +6,13 @@ let Message = require('../models/message');
 
 router.get('/', function (req, res, next) {
     Message.find()
+        .populate('user', 'firstName')
         .exec(function (err, messages) {
             if (err) {
                 return res.status(500).json({
                     title: 'An error occurred',
                     error: err
-                });
+                }); 
             }
             res.status(200).json({
                 message: 'Success',
@@ -44,7 +45,7 @@ router.post('/', (req, res, next) => {
         }
         let message = new Message({
             content: req.body.content,
-            user: user._id
+            user: user
         });
 
         message.save((err, result) => {
@@ -96,7 +97,9 @@ router.patch('/:id', function (req, res, next) {
         if (message.user != decoded.user._id) {
             return res.status(401).json({
                 title: 'Not Authenticated',
-                error: {message: 'Users do not match'}
+                error: {
+                    message: 'Users do not match'
+                }
             });
         }
         message.content = req.body.content;
@@ -136,7 +139,9 @@ router.delete('/:id', function (req, res, next) {
         if (message.user != decoded.user._id) {
             return res.status(401).json({
                 title: 'Not Authenticated',
-                error:{ message: 'Users do not match'}
+                error: {
+                    message: 'Users do not match'
+                }
             });
         }
         message.remove(function (err, result) {
